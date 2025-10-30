@@ -85,10 +85,15 @@ typedef struct{
     int mark;
 }symbol;
 
+//globals
 int tokenList[MAX_SYMBOL_TABLE_SIZE];
 int tokenInd =0;
 int tokenCount = 0;
 int codeIdx = 0;
+int symbolInd = 1;
+int numVars = 0;
+int numConsts = 0;
+InstructionRegister code[MAX_SYMBOL_TABLE_SIZE];
 
 // list of error messages each corresponding to an index
 const char* errorMessages[] = {
@@ -112,10 +117,7 @@ const char* errorMessages[] = {
 
 
 symbol symbol_table[MAX_SYMBOL_TABLE_SIZE];
-//globals
-int symbolInd = 1;
-int numVars = 0;
-int numConsts = 0;
+
 
 // linear search of the table, takes in a name as a parameter, if found it will return the index, otherwise returns -1 if not found
 int symbolTableCheck(const char*name){
@@ -149,7 +151,86 @@ void addToSymbolTable(int kind, const char* name, int val, int level, int addr){
 
 }
 
-//idrk whhat the point of this function is yet
+
+void getNextToken(){
+    if(tokenInd < tokenCount)
+    {
+     tokenInd++;
+    }
+}
+
+void expression(){
+    if(tokenList[symbolInd] == minussym){
+        getNextToken();
+        //TERM
+        //emit NEG
+        while(tokenList[symbolInd] == plussym || tokenList[symbolInd] == minussym){
+            if(tokenList[symbolInd] == plussym){
+                getNextToken();
+                //TERM
+                //EMIT ADD
+            }else{
+                getNextToken();
+                //TERM
+                //EMIT SUB
+            }
+        }
+    }else{
+        if(tokenList[symbolInd] == plussym){
+            getNextToken();
+        }
+        //TERM
+        while(tokenList[symbolInd] == plussym || tokenList[symbolInd] == minussym){
+            if(tokenList[symbolInd] == plussym){
+                getNextToken();
+                //TERM
+                //EMIT ADD
+            }else{
+                getNextToken();
+                //TERM
+                //EMIT SUB
+            }
+        }
+    }
+}
+
+void condition(){
+    if(tokenList[symbolInd] == evensym){
+        getNextToken();
+        //emit ODD
+    }else{
+        expression();
+        if(tokenList[symbolInd] == eqsym){
+            getNextToken();
+            expression();
+            //emit EQUL
+        }else if(tokenList[symbolInd] == neqsym){
+            getNextToken();
+            expression();
+            //emit NEQ
+        }else if(tokenList[symbolInd] == lessym){
+            getNextToken();
+            expression();
+            //emit LSS
+        }else if(tokenList[symbolInd] == leqsym){
+            getNextToken();
+            expression();
+            //emit LEQ
+        }else if(tokenList[symbolInd] == gtrsym){
+            getNextToken();
+            expression();
+            //emit GTR
+        }else if(tokenList[symbolInd] == geqsym){
+            getNextToken();
+            expression();
+            //emit GEQ
+        }else{
+            printf("%s",errorMessages[13]);
+            return;
+        }
+    }
+}
+
 void statement(){
   if (tokenList[symbolInd] == identsym){
     int symIdx = symbolTableCheck(tokenList[symbolInd]);
@@ -157,7 +238,7 @@ void statement(){
         printf("%s",errorMessages[7]);
         return;
     }
-    //get next token
+    getNextToken();
     // not a var
     if(symbol_table[symIdx].kind != 2){
         printf("%s",errorMessages[8]);
@@ -167,27 +248,27 @@ void statement(){
         printf("%s",errorMessages[9]);
         return;
     }
-    //get next token
+    getNextToken();
     // emit STO M = symbol_table[symIdx].addr
     return;
   }
   if(tokenList[symbolInd] ==beginsym){
     do{
-        // get next token
+        getNextToken();
         statement();
     }while(tokenList[symbolInd]==semicolonsym);
     if(tokenList[symbolInd]!=endsym){
         printf("%s",errorMessages[10]);
         return;
     }
-    //get next token
+    getNextToken();
     return;
   }
 
   // if token is ifsym
   if(tokenList[symbolInd]==ifsym){
 
-    // get next token
+    getNextToken();
     //condition
     int jpcIdx = codeIdx;
     // emit(JPC)
@@ -195,9 +276,9 @@ void statement(){
         printf("%s",errorMessages[11]);
         return;
     }
-    //get next token
+    getNextToken();
     statement();
-    //code[jpcIdx].m = codeIdx;
+    code[jpcIdx].m = codeIdx;
     return;
   }
 
@@ -207,7 +288,7 @@ void constDeclaration(const char* token){
     if(token == constsym){
         do{
             numConsts++;
-            // get next token
+            getNextToken();
             if(token!=identsym){
                 printf("%s",errorMessages[2]);
                 return;
@@ -217,45 +298,45 @@ void constDeclaration(const char* token){
                 return;
             }
             // save name
-            //get next token
+            getNextToken();
             if(token != eqsym){
                 printf("%s",errorMessages[4]);
                 return;
             }
-            //get next token
+            getNextToken();
             if(token != numbersym){
                 printf("%s",errorMessages[5]);
                 return;
             }
             addToSymbolTable(1, token, 0, 0, numVars+2);
-            //get next token
+            getNextToken();
         }while(token == commasym);
         if(token != semicolonsym){
             printf("%s",errorMessages[6]);
             return;
         }
-        //get next token
+        getNextToken();
     }
     if(tokenList[tokenInd] == whilesym){
-        //get next token
+        getNextToken();
         int loopIdx = codeIdx;
         //CONDITION
         if(tokenList[tokenInd]!=dosym){
             printf("%s",errorMessages[12]);
             return;
         }
-        //get next token
+        getNextToken();
         int jpcIdx = codeIdx;
         // emit(JPC)
         statement();
         // emitJMP m = loopidx
-        // code[jpcIdx].m = codeIdx;
+        code[jpcIdx].m = codeIdx;
         return;
     }
 
     //readsym
     if(tokenList[tokenInd] == readsym){
-        //get next token
+        getNextToken();
         if(tokenList[tokenInd] != identsym){
             printf("%s",errorMessages[2]);
             return;
@@ -269,14 +350,14 @@ void constDeclaration(const char* token){
             printf("%s",errorMessages[8]);
             return;
         }
-        // get next
+        getNextToken();
         // emit read
         // emit sto m = symbol_table[symIdx].addr
         return;
     }
     //writesym
     if(tokenList[tokenInd] == writesym){
-        // get next
+        getNextToken();
         //EXPRESSION
         // emit write
         return;
@@ -286,7 +367,7 @@ int varDeclaration(const char* token){
     if(token == varsym){
         do{
             numVars++;
-            // get next token
+            getNextToken();
             if(token!=identsym){
                 printf("%s",errorMessages[2]);
                 return;
@@ -296,13 +377,13 @@ int varDeclaration(const char* token){
                 return;
             }
             addToSymbolTable(2, token, 0, 0, numVars+2);
-            //get next token
+            getNextToken();
         }while(token == commasym);
         if(token != semicolonsym){
             printf("%s",errorMessages[6]);
             return;
         }
-        //get next token
+        getNextToken();
     }
     return numVars;
 
@@ -311,18 +392,27 @@ int varDeclaration(const char* token){
 
 void program(){
     block();
-    // if token != period sym, print error
+    if(tokenList[symbolInd] != periodsym){
+        printf("%s",errorMessages[1]);
+        return;
+    }
     // halt instr.
 }
 
 void block(){
-    constDeclaration();
-    int numVars = varDeclaration();
+   // constDeclaration();
+   // int numVars = varDeclaration();
     // emit INC M=3, numVars
     statement();
 
 }
 
+void emit(int op, int l, int m){
+    code[codeIdx].op = op;
+    code[codeIdx].l = l;
+    code[codeIdx].m = m;
+    codeIdx++;
+}
 
 int main(){
     
