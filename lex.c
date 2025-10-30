@@ -163,8 +163,8 @@ int main(int argc, char *argv[]) {
     characters[index] = '\0';
     fclose(f);
     // print out the source program that was read from the file
-    printf("Source Program :\n");
-    printf("%s\n", characters);
+    //printf("Source Program :\n");
+    //printf("%s\n", characters);
 
     int i = 0;
     // loop until we read the terminating null character
@@ -253,24 +253,37 @@ int main(int argc, char *argv[]) {
     }
 
     // print out the tables 
-    printf("Lexeme Table :\n");
-    printf("\n");
-    printf("lexeme\ttoken type\n");
+    //printf("Lexeme Table :\n");
+    //printf("\n");
+    //printf("lexeme\ttoken type\n");
     for(int j=0;j<tokenCount;j++){
-        printf("%s\t%d\n", tokenList[j].lexeme, tokenList[j].type);
+        //printf("%s\t%d\n", tokenList[j].lexeme, tokenList[j].type);
     }
-    printf("\nToken List:\n\n");
-    for(int j=0;j<tokenCount;j++){
-        if(tokenList[j].type == identsym || tokenList[j].type == numbersym){
-            printf("%d %s ", tokenList[j].type, tokenList[j].lexeme);
-        } else if(tokenList[j].type == skipsym){
-            // skip invalid symbols in token list
+    //printf("\nToken List:\n\n");
+
+    FILE *tf = fopen("tokens.txt", "w");
+    if (tf == NULL) {
+        fprintf(stderr, "Could not open tokens.txt for writing\n");
+        return 1;
+    }
+
+    for (int j = 0; j < tokenCount; j++) {
+        if (tokenList[j].type == identsym || tokenList[j].type == numbersym) {
+            //printf("%d %s ", tokenList[j].type, tokenList[j].lexeme);
+            fprintf(tf, "%d %s ", tokenList[j].type, tokenList[j].lexeme);
+        } else if (tokenList[j].type == skipsym) {
             continue;
         } else {
-            printf("%d ", tokenList[j].type);
+            // print to console
+            //printf("%d ", tokenList[j].type);
+            // mirror to tokens.txt
+            fprintf(tf, "%d ", tokenList[j].type);
         }
     }
-    printf("\n");
+    //printf("\n");
+    fprintf(tf, "\n");
+    fclose(tf);
+
 
     
     return 0;
