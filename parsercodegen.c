@@ -69,7 +69,6 @@ typedef enum{
 }oprcodes;
 
 
-
 typedef struct ir{
     int op;
     int l;
@@ -87,6 +86,8 @@ typedef struct{
 
 //globals
 int tokenList[MAX_SYMBOL_TABLE_SIZE];
+char identifierList[MAX_SYMBOL_TABLE_SIZE][12];
+int numList[MAX_SYMBOL_TABLE_SIZE];
 int tokenInd =0;
 int tokenCount = 0;
 int codeIdx = 0;
@@ -117,7 +118,24 @@ const char* errorMessages[] = {
 
 
 symbol symbol_table[MAX_SYMBOL_TABLE_SIZE];
-
+//prototypes"
+int symbolTableCheck(const char*name);
+void addToSymbolTable(int kind, const char* name, int val, int level, int addr);
+void program();
+void block();
+void constDeclaration();
+int varDeclaration();
+void statement();
+void condition();
+void expression();
+void term();
+void factor();
+void getNextToken();
+void emit(int op, int l, int m);
+void readFile();
+void printCode();
+void printTable();
+void printFile();
 
 // linear search of the table, takes in a name as a parameter, if found it will return the index, otherwise returns -1 if not found
 int symbolTableCheck(const char*name){
@@ -157,7 +175,7 @@ void program(){
         printf("%s",errorMessages[1]);
         return;
     }
-    // halt instr.
+    emit(SYS,0,3); // halt
 }
 
 void block(){
@@ -457,15 +475,67 @@ void emit(int op, int l, int m){
     codeIdx++;
 }
 
-int main(){
-    
-    FILE *file = fopen("output.txt", "r");
-    if (file == NULL) {
-        perror("Error opening file");
-        return -1;
+void readFile(){
+    FILE* f = fopen("tokens.txt", "r");
+    if (f == NULL) {
+        fprintf(stderr, "Could not open tokens.txt for reading\n");
+        return;
     }
+
+    int tokens = 0;
+    while(fscanf(f, "%d", &tokenList[tokens]) != EOF) {
+        tokenList[tokenCount] = tokens;
+        if(tokens == identsym){
+            fscanf(f, "%s", identifierList[tokens]);
+        }else if(tokens == numbersym){
+            fscanf(f, "%d", &numList[tokens]);
+        }
+        tokenCount++;
+    }
+    fclose(f);
+}
+
+void printCode(){
+    const char* op_names[] = {"", "LIT", "OPR", "LOD", "STO", "CAL", "INC", "JMP", "JPC", "SYS"};
     
+    printf("Assembly Code:\n");
+    printf("Line\tOP\tL\tM\n");
+    for (int i = 0; i < codeIdx; i++) {
+        printf("%d\t%s\t%d\t%d\n", i, op_names[code[i].op], code[i].l, code[i].m);
+    }
+}
 
+void printTable(){
+    printf("\nSymbol Table:\n");
+    printf("Kind | Name\t\t | Value | Level | Address | Mark\n");
+    printf("-----------------------------------------------------\n");
+    for (int i = 0; i < symbolInd; i++) {
+        printf("%-5d| %-15s| %-6d| %-6d| %-8d| %d\n",
+               symbol_table[i].kind,
+               symbol_table[i].name,
+               symbol_table[i].val,
+               symbol_table[i].level,
+               symbol_table[i].addr,
+               symbol_table[i].mark);
+    }
+}
+void printFile(){
+    FILE* out = fopen("elf.txt", "w");
+    if (out == NULL) {
+        perror("Error writing to elf.txt");
+        return;
+    }
+    for (int i = 0; i < codeIdx; i++) {
+        fprintf(out, "%d %d %d\n", code[i].op, code[i].l, code[i].m);
+    }
+    fclose(out);
+}
+int main(){
+    readFile();
+    program();
 
+    printCode();
+    printTable();
+    printFile();
     return 0;
 }
