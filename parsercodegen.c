@@ -170,6 +170,7 @@ void addToSymbolTable(int kind, const char* name, int val, int level, int addr){
 }
 
 void program(){
+    emit(JMP,0,0); // jump to main block
     block();
     if(tokenList[tokenInd] != periodsym){
         printf("%s",errorMessages[1]);
@@ -181,7 +182,9 @@ void program(){
 void block(){
     constDeclaration();
     int numVars = varDeclaration();
-    emit(INC,0,numVars);
+
+    code[0].m = codeIdx; // backpatching the jump instruction
+    emit(INC,0,3+numVars);
     statement();
 
 }
@@ -211,7 +214,7 @@ void constDeclaration(){
                 printf("%s",errorMessages[5]);
                 return;
             }
-            addToSymbolTable(1,identifierName, 0, 0, numVars+2);
+            addToSymbolTable(1,identifierName, numList[tokenInd], 0, 0);
             getNextToken();
         }while(tokenList[tokenInd] == commasym);
         if(tokenList[tokenInd] != semicolonsym){
@@ -236,7 +239,7 @@ int varDeclaration(){
                 printf("%s",errorMessages[7]);
                 return 0;
             }
-            addToSymbolTable(2, identifierList[tokenInd], 0, 0, numVars+2);
+            addToSymbolTable(2, identifierList[tokenInd], 0, 0, 3+numVars-1);
             getNextToken();
         }while(tokenList[tokenInd] == commasym);
         if(tokenList[tokenInd] != semicolonsym){
@@ -266,6 +269,7 @@ void statement(){
         return;
     }
     getNextToken();
+    expression();
     emit(STO,0,symbol_table[symIdx].addr);
     return;
   }
@@ -294,6 +298,11 @@ void statement(){
     }
     getNextToken();
     statement();
+    if(tokenList[tokenInd]!= fisym){
+        printf("%s",errorMessages[15]);
+        return;
+    }
+    getNextToken();
     code[jpcIdx].m = codeIdx;
     return;
   }
@@ -348,6 +357,7 @@ void statement(){
 void condition(){
     if(tokenList[tokenInd] == evensym){
         getNextToken();
+        expression();
         emit(OPR,0,EVEN);
     }else{
         expression();
