@@ -3,6 +3,8 @@
 #include <string.h>
 
 #define MAX_SYMBOL_TABLE_SIZE 500
+#define MAX_TOKENS     20000
+#define MAX_IDENT_LEN  11
 
 typedef enum {
     skipsym = 1 , // Skip / ignore token
@@ -83,6 +85,28 @@ typedef struct{
     int addr;
     int mark;
 }symbol;
+
+typedef struct {
+    int type;
+    char ident[MAX_IDENT_LEN + 1]; 
+    int number;                   
+} Token;
+
+void program(void);
+void block(void);
+void statement(void);
+void condition(void);
+void expression(void);
+void constDeclaration(void);
+int  varDeclaration(void);
+
+// you already have these in your file; keep your versions:
+int symbolTableCheck(const char *name);
+void addToSymbolTable(int kind, const char *name, int val, int level, int addr);
+
+static Token tokens[MAX_TOKENS];
+static int ntokens = 0;
+static int cur = 0;
 
 //globals
 int tokenList[MAX_SYMBOL_TABLE_SIZE];
@@ -490,12 +514,37 @@ void emit(int op, int l, int m){
     codeIdx++;
 }
 
-void readFile(){
-    FILE* f = fopen("tokens.txt", "r");
-    if (f == NULL) {
-        // Using perror is helpful as it tells you *why* the open failed
-        perror("Error opening tokens.txt");
-        exit(1); // Exit if the file can't be opened
+static void load_tokens_from_file(void) {
+    FILE *f = fopen("tokens.txt", "r");
+    if (!f) { perror("tokens.txt"); exit(1); }
+
+    int t;
+    while (fscanf(f, "%d", &t) == 1) {
+        Token tok;
+        memset(&tok, 0, sizeof tok);
+        tok.type = t;
+
+        if (t == identsym) {
+            if (fscanf(f, "%11s", tok.ident) != 1) break;
+        } else if (t == numbersym) {
+            if (fscanf(f, "%d", &tok.number) != 1) break;
+        }
+
+        if (ntokens < MAX_TOKENS) tokens[ntokens++] = tok;
+        else { fprintf(stderr, "Too many tokens\n"); break; }
+    }
+    fclose(f);
+}
+
+
+int main(){
+    load_tokens_from_file();
+
+
+    FILE *file = fopen("output.txt", "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return -1;
     }
 
     int token_value;
