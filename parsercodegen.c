@@ -169,14 +169,24 @@ void addToSymbolTable(int kind, const char* name, int val, int level, int addr){
 
 }
 
-void program(){
+void program(void)
+{
+    // JMP 0 3
+    emit(JMP, 0, 3);
+
+    // get program body
     block();
-    if(tokenList[symbolInd] != periodsym){
-        printf("%s",errorMessages[1]);
-        return;
+
+    // end with a .
+    if (tokenList[tokenInd] != periodsym) {
+        printf("%s\n", errorMessages[1]); 
+        return; 
     }
-    emit(SYS,0,3); // halt
+
+    // Halt
+    emit(SYS, 0, 3);
 }
+
 
 void block(){
     constDeclaration();
@@ -344,94 +354,50 @@ void statement(){
     }
 }
 
-void condition(){
-    if(tokenList[symbolInd] == evensym){
+void condition(void) {
+    if (tokenList[tokenInd] == evensym) {
         getNextToken();
-        emit(OPR,0,EVEN);
-    }else{
+        emit(OPR, 0, EVEN);
+    } else {
         expression();
-        if(tokenList[symbolInd] == eqsym){
-            getNextToken();
-            expression();
-            emit(OPR,0,EQUL);
-        }else if(tokenList[symbolInd] == neqsym){
-            getNextToken();
-            expression();
-            emit(OPR,0,NEQ);
-        }else if(tokenList[symbolInd] == lessym){
-            getNextToken();
-            expression();
-            emit(OPR,0,LSS);
-        }else if(tokenList[symbolInd] == leqsym){
-            getNextToken();
-            expression();
-            emit(OPR,0,LEQ);
-        }else if(tokenList[symbolInd] == gtrsym){
-            getNextToken();
-            expression();
-            emit(OPR,0,GTR);
-        }else if(tokenList[symbolInd] == geqsym){
-            getNextToken();
-            expression();
-            emit(OPR,0,GEQ);
-        }else{
-            printf("%s",errorMessages[13]);
+        if      (tokenList[tokenInd] == eqsym)   { getNextToken(); expression(); emit(OPR, 0, EQUL); }
+        else if (tokenList[tokenInd] == neqsym)  { getNextToken(); expression(); emit(OPR, 0, NEQ);  }
+        else if (tokenList[tokenInd] == lessym)  { getNextToken(); expression(); emit(OPR, 0, LSS);  }
+        else if (tokenList[tokenInd] == leqsym)  { getNextToken(); expression(); emit(OPR, 0, LEQ);  }
+        else if (tokenList[tokenInd] == gtrsym)  { getNextToken(); expression(); emit(OPR, 0, GTR);  }
+        else if (tokenList[tokenInd] == geqsym)  { getNextToken(); expression(); emit(OPR, 0, GEQ);  }
+        else {
+            printf("%s", errorMessages[13]); 
             return;
         }
     }
 }
 
-void expression(){
-    if(tokenList[symbolInd] == minussym){
+void expression(void) {
+    if (tokenList[tokenInd] == minussym) {
         getNextToken();
-        //TERM
-        emit(OPR,0,SUB);
-        while(tokenList[symbolInd] == plussym || tokenList[symbolInd] == minussym){
-            if(tokenList[symbolInd] == plussym){
-                getNextToken();
-                //TERM
-                //EMIT ADD
-            }else{
-                getNextToken();
-                //TERM
-                emit(OPR,0,SUB);
-            }
+        emit(OPR, 0, SUB);
+        while (tokenList[tokenInd] == plussym || tokenList[tokenInd] == minussym) {
+            if (tokenList[tokenInd] == plussym) { getNextToken(); /* TERM(); */ /* emit(OPR,0,ADD); */ }
+            else                                { getNextToken(); /* TERM(); */ emit(OPR, 0, SUB); }
         }
-    }else{
-        if(tokenList[symbolInd] == plussym){
-            getNextToken();
-        }
-        //TERM
-        while(tokenList[symbolInd] == plussym || tokenList[symbolInd] == minussym){
-            if(tokenList[symbolInd] == plussym){
-                getNextToken();
-                //TERM
-                emit(OPR,0,ADD);
-            }else{
-                getNextToken();
-                //TERM
-                emit(OPR,0,SUB);
-            }
+    } else {
+        if (tokenList[tokenInd] == plussym) getNextToken();
+        while (tokenList[tokenInd] == plussym || tokenList[tokenInd] == minussym) {
+            if (tokenList[tokenInd] == plussym) { getNextToken(); /* TERM(); */ emit(OPR, 0, ADD); }
+            else                                { getNextToken(); /* TERM(); */ emit(OPR, 0, SUB); }
         }
     }
 }
 
-void term(){
+void term(void) {
     factor();
-    while(tokenList[symbolInd] == multsym || tokenList[symbolInd] == slashsym /* || tokenlist[symbolInd] == modsym*/){
-        if(tokenList[symbolInd] == multsym){
-            getNextToken();
-            factor();
-            emit(OPR,0,MUL);
-        }else if(tokenList[symbolInd] == slashsym){
-            getNextToken();
-            factor();
-            emit(OPR,0,DIV);
-        /*}else{
-            getNextToken();
-            factor();
-            emit(OPR,0,MOD);
-        */}
+    while (tokenList[tokenInd] == multsym || tokenList[tokenInd] == slashsym /*|| tokenList[tokenInd] == modsym*/) {
+        if (tokenList[tokenInd] == multsym) {
+            getNextToken(); factor(); emit(OPR, 0, MUL);
+        } else if (tokenList[tokenInd] == slashsym) {
+            getNextToken(); factor(); emit(OPR, 0, DIV);
+        }
     }
 }
 
